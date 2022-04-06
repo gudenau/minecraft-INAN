@@ -1,38 +1,58 @@
 plugins {
-	id 'fabric-loom' version '0.11-SNAPSHOT'
+    id 'fabric-loom' version '0.11-SNAPSHOT'
 }
 
 sourceCompatibility = JavaVersion.VERSION_17
 targetCompatibility = JavaVersion.VERSION_17
 
+def getGitHash = { ->
+    try {
+        var process = new ProcessBuilder()
+            .command('git', 'rev-parse', '--short', 'HEAD')
+            .start()
+
+		while(process.isAlive()){
+			process.waitFor()
+		}
+
+		if(process.exitValue() != 0){
+			return 'UNKNOWN'
+		}
+
+		return process.inputReader().lines().findFirst().orElse('UNKNOWN').trim()
+    } catch(IOException ignored){
+        return 'UNKNOWN'
+    }
+}
+
 archivesBaseName = project.archives_base_name
-version = project.mod_version
+version = project.mod_version + "+${getGitHash()}"
 group = project.maven_group
 
 dependencies {
-	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 }
 
 processResources {
-	inputs.property "version", project.version
+    inputs.property "version", project.version
 
-	filesMatching("fabric.mod.json") {
-		expand "version": project.version
-	}
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {
-	it.options.release = 17
+    it.options.release = 17
 }
 
 java {
-	withSourcesJar()
+    withSourcesJar()
 }
 
 jar {
-	from("LICENSE") {
-		rename { "${it}_${project.archivesBaseName}"}
-	}
+    from("LICENSE") {
+        rename { "${it}_${project.archivesBaseName}"}
+    }
 }
